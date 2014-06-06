@@ -225,3 +225,6 @@ node_modules
 /tutorial/js/build/
 /ylwrap
 
+
+lib/java/thrift-lib-java.iml
+lib/java/.idea/
