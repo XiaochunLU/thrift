@@ -84,6 +84,9 @@ public:
     iter = parsed_options.find("reuse-objects");
     reuse_objects_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("vertx");
+    vertx_ = (iter != parsed_options.end());
+
     out_dir_base_ = (bean_style_ ? "gen-javabean" : "gen-java");
   }
 
@@ -146,13 +149,18 @@ public:
 
   void generate_service_interface (t_service* tservice);
   void generate_service_async_interface(t_service* tservice);
-  void generate_service_helpers   (t_service* tservice);
-  void generate_service_client    (t_service* tservice);
-  void generate_service_async_client(t_service* tservice);
-  void generate_service_server    (t_service* tservice);
-  void generate_service_async_server    (t_service* tservice);
-  void generate_process_function  (t_service* tservice, t_function* tfunction);
-  void generate_process_async_function  (t_service* tservice, t_function* tfunction);
+  void generate_service_vertx_server_interface(t_service* tservice);
+  void generate_service_vertx_client_interface(t_service* tservice);
+  void generate_service_helpers       (t_service* tservice);
+  void generate_service_client        (t_service* tservice);
+  void generate_service_async_client  (t_service* tservice);
+  void generate_service_vertx_client  (t_service* tservice);
+  void generate_service_server        (t_service* tservice);
+  void generate_service_async_server  (t_service* tservice);
+  void generate_service_vertx_server  (t_service* tservice);
+  void generate_process_function      (t_service* tservice, t_function* tfunction);
+  void generate_process_async_function(t_service* tservice, t_function* tfunction);
+  void generate_process_vertx_function(t_service* tservice, t_function* tfunction);
 
 
   void generate_java_union(t_struct* tstruct);
@@ -278,9 +286,13 @@ public:
   std::string declare_field(t_field* tfield, bool init=false, bool comment=false);
   std::string function_signature(t_function* tfunction, std::string prefix="");
   std::string function_signature_async(t_function* tfunction, bool use_base_method = false, std::string prefix="");
+  std::string function_signature_vertx_server(t_function* tfunction, bool use_base_method = false, std::string prefix="");
+  std::string function_signature_vertx_client(t_function* tfunction, bool use_base_method = false, std::string prefix="");
   std::string argument_list(t_struct* tstruct, bool include_types = true);
   std::string async_function_call_arglist(t_function* tfunc, bool use_base_method = true, bool include_types = true);
   std::string async_argument_list(t_function* tfunct, t_struct* tstruct, t_type* ttype, bool include_types=false);
+  std::string function_call_arglist_vertx_server(t_function* tfunc, bool use_base_method = true, bool include_types = true);
+  std::string function_call_arglist_vertx_client(t_function* tfunc, bool use_base_method = true, bool include_types = true);
   std::string type_to_enum(t_type* ttype);
   std::string get_enum_class_name(t_type* type);
   void generate_struct_desc(ofstream& out, t_struct* tstruct);
@@ -321,6 +333,7 @@ public:
   bool java5_;
   bool sorted_containers_;
   bool reuse_objects_;
+  bool vertx_;
 };
 
 
@@ -388,8 +401,8 @@ string t_java_generator::java_type_imports() {
     "import org.apache.thrift.protocol.TProtocolException;\n" +
     "import org.apache.thrift.EncodingUtils;\n" +
     "import org.apache.thrift.TException;\n" +
-    "import org.apache.thrift.async.AsyncMethodCallback;\n"+
-    "import org.apache.thrift.server.AbstractNonblockingServer.*;\n"+
+    (vertx_ ? "" : "import org.apache.thrift.async.AsyncMethodCallback;\n") +
+    (vertx_ ? "" : "import org.apache.thrift.server.AbstractNonblockingServer.*;\n") +
     "import java.util.List;\n" +
     "import java.util.ArrayList;\n" +
     "import java.util.Map;\n" +
@@ -2252,12 +2265,23 @@ void t_java_generator::generate_service(t_service* tservice) {
   indent_up();
 
   // Generate the three main parts of the service
-  generate_service_interface(tservice);
-  generate_service_async_interface(tservice);
-  generate_service_client(tservice);
-  generate_service_async_client(tservice);
-  generate_service_server(tservice);
-  generate_service_async_server(tservice);
+  if (!vertx_) {
+    generate_service_interface(tservice);
+    generate_service_async_interface(tservice);
+    generate_service_client(tservice);
+    generate_service_async_client(tservice);
+    generate_service_server(tservice);
+    generate_service_async_server(tservice);
+  } else {
+    generate_service_interface(tservice);
+    // Vert.x async service interfaces have different signatures
+    generate_service_vertx_server_interface(tservice);
+    generate_service_vertx_client_interface(tservice);
+    // Vert.x supports only async clients
+    generate_service_vertx_client(tservice);
+    generate_service_server(tservice);
+    generate_service_vertx_server(tservice);
+  }
   generate_service_helpers(tservice);
 
   indent_down();
@@ -2307,6 +2331,44 @@ void t_java_generator::generate_service_async_interface(t_service* tservice) {
   vector<t_function*>::iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     indent(f_service_) << "public " << function_signature_async(*f_iter, true) << " throws org.apache.thrift.TException;" << endl << endl;
+  }
+  indent_down();
+  f_service_ << indent() << "}" << endl << endl;
+}
+
+void t_java_generator::generate_service_vertx_server_interface(t_service* tservice) {
+  string extends = "";
+  string extends_iface = "";
+  if (tservice->get_extends() != NULL) {
+    extends = type_name(tservice->get_extends());
+    extends_iface = " extends " + extends + " .AsyncIface";
+  }
+
+  f_service_ << indent() << "public interface AsyncIface" << extends_iface << " {" << endl << endl;
+  indent_up();
+  vector<t_function*> functions = tservice->get_functions();
+  vector<t_function*>::iterator f_iter;
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    indent(f_service_) << "public " << function_signature_vertx_server(*f_iter, true) << " throws org.apache.thrift.TException;" << endl << endl;
+  }
+  indent_down();
+  f_service_ << indent() << "}" << endl << endl;
+}
+
+void t_java_generator::generate_service_vertx_client_interface(t_service* tservice) {
+  string extends = "";
+  string extends_iface = "";
+  if (tservice->get_extends() != NULL) {
+    extends = type_name(tservice->get_extends());
+    extends_iface = " extends " + extends + " .AsyncClientIface";
+  }
+
+  f_service_ << indent() << "public interface AsyncClientIface" << extends_iface << " {" << endl << endl;
+  indent_up();
+  vector<t_function*> functions = tservice->get_functions();
+  vector<t_function*>::iterator f_iter;
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    indent(f_service_) << "public " << function_signature_vertx_client(*f_iter, true) << " throws org.apache.thrift.TException;" << endl << endl;
   }
   indent_down();
   f_service_ << indent() << "}" << endl << endl;
@@ -2621,6 +2683,136 @@ void t_java_generator::generate_service_async_client(t_service* tservice) {
   f_service_ << endl;
 }
 
+void t_java_generator::generate_service_vertx_client(t_service* tservice) {
+  string extends = "org.apache.thrift.async.TAsyncClient";
+  string extends_client = "";
+  if (tservice->get_extends() != NULL) {
+    extends = type_name(tservice->get_extends()) + ".VertxClient";
+  }
+
+  indent(f_service_) <<
+    "public static class VertxClient extends " << extends << " implements AsyncClientIface {" << endl;
+  indent_up();
+
+  // Factory method
+  indent(f_service_) << "public static class Factory implements org.apache.thrift.async.TAsyncClientFactory<VertxClient> {" << endl;
+  indent(f_service_) << "  private org.apache.thrift.async.TAsyncClientManager clientManager;" << endl;
+  indent(f_service_) << "  public Factory(org.apache.thrift.async.TAsyncClientManager clientManager) {" << endl;
+  indent(f_service_) << "    this.clientManager = clientManager;" << endl;
+  indent(f_service_) << "  }" << endl;
+  indent(f_service_) << "  public VertxClient getAsyncClient() {" << endl;
+  indent(f_service_) << "    return new VertxClient(clientManager);" << endl;
+  indent(f_service_) << "  }" << endl;
+  indent(f_service_) << "}" << endl << endl;
+
+  indent(f_service_) << "public VertxClient(org.apache.thrift.async.TAsyncClientManager clientManager) {" << endl;
+  indent(f_service_) << "  super(clientManager);" << endl;
+  indent(f_service_) << "}" << endl << endl;
+
+  // Generate client method implementations
+  vector<t_function*> functions = tservice->get_functions();
+  vector<t_function*>::const_iterator f_iter;
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    string funname = (*f_iter)->get_name();
+    t_type* ret_type = (*f_iter)->get_returntype();
+    t_struct* arg_struct = (*f_iter)->get_arglist();
+    string funclassname = funname + "_call";
+    const vector<t_field*>& fields = arg_struct->get_members();
+    const std::vector<t_field*>& xceptions = (*f_iter)->get_xceptions()->get_members();
+    vector<t_field*>::const_iterator fld_iter;
+    string args_name = (*f_iter)->get_name() + "_args";
+    string result_name = (*f_iter)->get_name() + "_result";
+
+    // Main method body   
+    indent(f_service_) << "public " << function_signature_vertx_client(*f_iter, false) << " throws org.apache.thrift.TException {" << endl;
+    indent(f_service_) << "  " << funclassname << " methodCall = new " + funclassname + "(" << function_call_arglist_vertx_client(*f_iter, false, false) << ", clientManager);" << endl;
+    indent(f_service_) << "  clientManager.call(methodCall);" << endl;
+    indent(f_service_) << "}" << endl;
+
+    f_service_ << endl;
+
+    // TAsyncMethod object for this function call
+    indent(f_service_) << "public static class " + funclassname + " extends org.apache.thrift.async.TAsyncMethodCall {" << endl;
+    indent_up();
+
+    // Member variables
+    for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
+      indent(f_service_) << "private " + type_name((*fld_iter)->get_type()) + " " + (*fld_iter)->get_name() + ";" << endl;
+    }
+
+    // Constructor
+    indent(f_service_) << "public " + funclassname + "(" + function_call_arglist_vertx_client(*f_iter, false, true) << ", org.apache.thrift.async.TAsyncClientManager clientManager) throws org.apache.thrift.TException {" << endl;
+    indent(f_service_) << "  super(handler, clientManager, " << ((*f_iter)->is_oneway() ? "true" : "false") << ");" << endl;
+
+    // Assign member variables
+    for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
+      indent(f_service_) << "  this." + (*fld_iter)->get_name() + " = " + (*fld_iter)->get_name() + ";" << endl;
+    }
+
+    indent(f_service_) << "}" << endl << endl;
+
+    indent(f_service_) << "public void write_args(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {" << endl;
+    indent_up();
+
+    // Serialize request
+    f_service_ << 
+      indent() << args_name << " args = new " << args_name << "();" << endl;
+
+    for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
+      f_service_ << indent() << "args.set" << get_cap_name((*fld_iter)->get_name()) << "(" << (*fld_iter)->get_name() << ");" << endl;
+    }
+
+    f_service_ << 
+      indent() << "writeMessage(oprot, \"" << funname <<"\", args);" << endl;
+
+    indent_down();
+    indent(f_service_) << "}" << endl << endl;
+
+    // Return method  
+    indent(f_service_) << "public " + type_name(ret_type, true) + " getResult(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {" << endl;
+
+    indent_up();
+    f_service_ <<
+      indent() << result_name << " result = new " << result_name << "();" << endl <<
+      indent() << "readMessage(iprot, result, \"" << funname << "\");" << endl;
+
+    // Careful, only return _result if not a void function
+    if (!(*f_iter)->get_returntype()->is_void()) {
+      f_service_ <<
+        indent() << "if (result." << generate_isset_check("success") << ") {" << endl <<
+        indent() << "  return result.success;" << endl <<
+        indent() << "}" << endl;
+    }
+
+    for (fld_iter = xceptions.begin(); fld_iter != xceptions.end(); ++fld_iter) {
+      f_service_ <<
+        indent() << "if (result." << (*fld_iter)->get_name() << " != null) {" << endl <<
+        indent() << "  throw result." << (*fld_iter)->get_name() << ";" << endl <<
+        indent() << "}" << endl;
+    }
+
+    // If you get here it's an exception, unless a void function
+    if ((*f_iter)->get_returntype()->is_void()) {
+      indent(f_service_) << "return null;" << endl;
+    } else {
+      f_service_ <<
+        indent() << "throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, \"" << (*f_iter)->get_name() << " failed: unknown result\");" << endl;
+    }
+
+    // Close function
+    indent_down();
+    indent(f_service_) << "}" << endl;
+
+    // Close class
+    indent_down();
+    indent(f_service_) << "}" << endl << endl;
+  }
+
+  // Close AsyncClient
+  scope_down(f_service_);
+  f_service_ << endl;
+}
+
 /**
  * Generates a service server definition.
  *
@@ -2726,6 +2918,202 @@ void t_java_generator::generate_service_async_server(t_service* tservice) {
 
   indent_down();
   indent(f_service_) << "}" << endl << endl;
+}
+
+void t_java_generator::generate_service_vertx_server(t_service* tservice) {
+  // Generate the dispatch methods
+  vector<t_function*> functions = tservice->get_functions();
+  vector<t_function*>::iterator f_iter;
+
+  // Extends stuff
+  string extends = "";
+  string extends_processor = "";
+  if (tservice->get_extends() == NULL) {
+    extends_processor = "org.apache.thrift.TBaseAsyncProcessor<I>";
+  } else {
+    extends = type_name(tservice->get_extends());
+    extends_processor = extends + ".AsyncProcessor<I>";
+  }
+
+  // Generate the header portion
+  indent(f_service_) <<
+    "public static class AsyncProcessor<I extends AsyncIface> extends " << extends_processor << " {" << endl;
+  indent_up();
+
+  indent(f_service_) << "private static final Logger LOGGER = LoggerFactory.getLogger(AsyncProcessor.class.getName());" << endl;
+
+  indent(f_service_) << "public AsyncProcessor(I iface) {" << endl;
+  indent(f_service_) << "  super(iface, getProcessMap(new HashMap<String, org.apache.thrift.AsyncProcessFunction<I, ? extends org.apache.thrift.TBase, ?>>()));" << endl;
+  indent(f_service_) << "}" << endl << endl;
+
+  indent(f_service_) << "protected AsyncProcessor(I iface, Map<String,  org.apache.thrift.AsyncProcessFunction<I, ? extends  org.apache.thrift.TBase, ?>> processMap) {" << endl;
+  indent(f_service_) << "  super(iface, getProcessMap(processMap));" << endl;
+  indent(f_service_) << "}" << endl << endl;
+
+
+  indent(f_service_) << "private static <I extends AsyncIface> Map<String,  org.apache.thrift.AsyncProcessFunction<I, ? extends  org.apache.thrift.TBase,?>> getProcessMap(Map<String,  org.apache.thrift.AsyncProcessFunction<I, ? extends  org.apache.thrift.TBase, ?>> processMap) {" << endl;
+  indent_up();
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    indent(f_service_) << "processMap.put(\"" << (*f_iter)->get_name() << "\", new " << (*f_iter)->get_name() << "());" << endl;
+  }
+  indent(f_service_) << "return processMap;" << endl;
+  indent_down();
+  indent(f_service_) << "}" << endl << endl;
+
+  // Generate the process subfunctions
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    generate_process_vertx_function(tservice, *f_iter);
+  }
+
+  indent_down();
+  indent(f_service_) << "}" << endl << endl;
+}
+
+void t_java_generator::generate_process_vertx_function(t_service* tservice,
+  t_function* tfunction) {
+    string argsname = tfunction->get_name() + "_args";
+
+    string resultname = tfunction->get_name() + "_result";
+    if (tfunction->is_oneway()) {
+      resultname = "org.apache.thrift.TBase";
+    }
+
+    string resulttype = type_name(tfunction->get_returntype(),true);
+
+
+    (void) tservice;
+    // Open class
+    indent(f_service_) <<
+      "public static class " << tfunction->get_name() << "<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, " << argsname << ", "<<resulttype<<"> {" << endl;
+    indent_up();
+
+    indent(f_service_) << "public " << tfunction->get_name() << "() {" << endl;
+    indent(f_service_) << "  super(\"" << tfunction->get_name() << "\");" << endl;
+    indent(f_service_) << "}" << endl << endl;
+
+    indent(f_service_) << "public " << argsname << " getEmptyArgsInstance() {" << endl;
+    indent(f_service_) << "  return new " << argsname << "();" << endl;
+    indent(f_service_) << "}" << endl << endl;
+
+    indent(f_service_) << "public org.vertx.java.core.Handler<org.vertx.java.core.AsyncResult<"<<resulttype<<">> getResultHandler(final org.apache.thrift.protocol.TProtocol oprot, final int seqid) {" << endl;
+    indent_up();
+    indent(f_service_) << "final org.apache.thrift.AsyncProcessFunction fcall = this;"<<endl;
+    indent(f_service_) << "return new org.vertx.java.core.Handler<org.vertx.java.core.AsyncResult<"<<resulttype<<">>() { " << endl;
+    indent_up();
+    indent(f_service_) <<	"public void handle(org.vertx.java.core.AsyncResult<" << resulttype <<"> event) {" << endl;
+    indent_up();
+    if (tfunction->is_oneway()) {
+      indent(f_service_) <<	"return; // One-way, do nothing" << endl;
+    } else {
+      indent(f_service_) <<	"if (event.succeeded()) {" << endl;
+      indent_up();
+      // Succeeded -->
+      indent(f_service_) <<resultname<<" result = new "<<resultname<<"();"<<endl;
+
+      if (!tfunction->get_returntype()->is_void()) {
+        indent(f_service_) << "result.success = event.result();"<<endl;
+        // Set isset on success field
+        if (!type_can_be_null(tfunction->get_returntype())) {
+          indent(f_service_) << "result.set" << get_cap_name("success") << get_cap_name("isSet") << "(true);" << endl;
+        }
+      }
+
+      indent(f_service_) << "try {"<<endl;
+      indent(f_service_) << "  fcall.sendResponse(oprot, result, org.apache.thrift.protocol.TMessageType.REPLY, seqid);"<<endl;
+      indent(f_service_) << "  return;"<<endl;
+      indent(f_service_) << "} catch (Exception e) {"<<endl;
+      indent(f_service_) << "  LOGGER.error(\"Error during sending response\", e);"<<endl;
+      indent(f_service_) << "}"<<endl;
+      // <--
+      indent_down();
+      indent(f_service_) <<	"} else {" << endl;
+      indent_up();
+      // Failed -->
+      indent(f_service_) <<"byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;"<<endl;
+      indent(f_service_) <<"Throwable e = event.cause();"<<endl;
+      indent(f_service_) <<"org.apache.thrift.TBase msg;"<<endl;
+      indent(f_service_) <<resultname<<" result = new "<<resultname<<"();"<<endl;
+
+      t_struct* xs = tfunction->get_xceptions();
+      const std::vector<t_field*>& xceptions = xs->get_members();
+      vector<t_field*>::const_iterator x_iter;
+      if (xceptions.size() > 0) {
+        for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
+          if (x_iter != xceptions.begin()) indent(f_service_) << "else ";
+          indent(f_service_) << "if (e instanceof " << type_name((*x_iter)->get_type(), false, false)<<") {" << endl;
+          indent_up();
+          indent(f_service_) << "result." << (*x_iter)->get_name() << " = (" << type_name((*x_iter)->get_type(), false, false) << ") e;" << endl;
+          indent(f_service_) << "result.set" << get_cap_name((*x_iter)->get_name()) << get_cap_name("isSet") << "(true);" << endl;
+          indent(f_service_) << "msg = result;"<<endl;
+          indent_down();
+          indent(f_service_) << "}"<<endl;
+        }
+        indent(f_service_) << "else {"<<endl;
+        indent_up();
+      }
+      indent(f_service_) << "msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;"<<endl;
+      indent(f_service_) << "msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());"<<endl;
+      if (xceptions.size() > 0) {
+        indent_down();
+        indent(f_service_) << "}"<<endl;
+      }
+
+      indent(f_service_) << "try {"<<endl;
+      indent(f_service_) << "  fcall.sendResponse(oprot, msg, msgType, seqid);"<<endl;
+      indent(f_service_) << "  return;"<<endl;
+      indent(f_service_) << "} catch (Exception ex) {"<<endl;
+      indent(f_service_) << "  LOGGER.error(\"Error during sending response\", ex);"<<endl;
+      indent(f_service_) << "}"<<endl;
+      // <--
+      indent_down();
+      indent(f_service_) <<	"}" << endl;
+    }
+
+    indent_down();
+    indent(f_service_) << "}" <<endl;
+    indent_down();
+    indent(f_service_) << "};" <<endl;
+    indent_down();
+    indent(f_service_) << "}" << endl << endl;
+
+    indent(f_service_) << "protected boolean isOneway() {" << endl;
+    indent(f_service_) << "  return " << ((tfunction->is_oneway())?"true":"false") << ";" << endl;
+    indent(f_service_) << "}" << endl << endl;
+
+    indent(f_service_) << "public void start(I iface, " << argsname << " args, org.vertx.java.core.Future<"<<resulttype<<"> future) throws TException {" << endl;
+    indent_up();
+
+    // Generate the function call
+    t_struct* arg_struct = tfunction->get_arglist();
+    const std::vector<t_field*>& fields = arg_struct->get_members();
+    vector<t_field*>::const_iterator f_iter;
+    f_service_ << indent();
+
+    f_service_ << "iface." << tfunction->get_name() << "(";
+    bool first = true;
+    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+      if (first) {
+        first = false;
+      } else {
+        f_service_ << ", ";
+      }
+      f_service_ << "args." << (*f_iter)->get_name();
+    }
+    if (!first)
+      f_service_ << ",";
+    f_service_ << "future";
+    f_service_ << ");" << endl;
+
+
+    indent_down();
+    indent(f_service_) << "}";
+
+    // Close function
+    f_service_ << endl;
+
+    // Close class
+    indent_down();
+    f_service_ << indent() << "}" << endl << endl;
 }
 
 
@@ -3661,12 +4049,6 @@ string t_java_generator::function_signature(t_function* tfunction,
 string t_java_generator::function_signature_async(t_function* tfunction, bool use_base_method, string prefix) {
   std::string arglist = async_function_call_arglist(tfunction, use_base_method, true);
 
-  std::string ret_type = "";
-  if (use_base_method) {
-    ret_type += "AsyncClient.";
-  }
-  ret_type += tfunction->get_name() + "_call";
-
   std::string result = prefix + "void " + tfunction->get_name() + "(" + arglist + ")";
   return result;
 }
@@ -3681,6 +4063,62 @@ string t_java_generator::async_function_call_arglist(t_function* tfunc, bool use
     arglist += "org.apache.thrift.async.AsyncMethodCallback ";
   }
   arglist += "resultHandler";
+
+  return arglist;
+}
+
+/**
+ * Renders a function signature of the form 'void name(args, org.vertx.java.core.Future future)'
+ *
+ * @params tfunction Function definition
+ * @return String of rendered function definition
+ */
+string t_java_generator::function_signature_vertx_server(t_function* tfunction, bool use_base_method, string prefix) {
+  std::string arglist = function_call_arglist_vertx_server(tfunction, use_base_method, true);
+
+  std::string result = prefix + "void " + tfunction->get_name() + "(" + arglist + ")";
+  return result;
+}
+
+string t_java_generator::function_call_arglist_vertx_server(t_function* tfunc, bool use_base_method, bool include_types) {
+  std::string arglist = "";
+  if (tfunc->get_arglist()->get_members().size() > 0) {
+    arglist = argument_list(tfunc->get_arglist(), include_types) + ", ";
+  }
+
+  if (include_types) {
+    t_type* ttype = tfunc->get_returntype();
+    arglist += "org.vertx.java.core.Future<" + type_name(ttype, true) + "> ";
+  }
+  arglist += "future";
+
+  return arglist;
+}
+
+/**
+ * Renders a function signature of the form 'void name(args, org.vertx.java.core.AsyncResultHandler handler)'
+ *
+ * @params tfunction Function definition
+ * @return String of rendered function definition
+ */
+string t_java_generator::function_signature_vertx_client(t_function* tfunction, bool use_base_method, string prefix) {
+  std::string arglist = function_call_arglist_vertx_client(tfunction, use_base_method, true);
+
+  std::string result = prefix + "void " + tfunction->get_name() + "(" + arglist + ")";
+  return result;
+}
+
+string t_java_generator::function_call_arglist_vertx_client(t_function* tfunc, bool use_base_method, bool include_types) {
+  std::string arglist = "";
+  if (tfunc->get_arglist()->get_members().size() > 0) {
+    arglist = argument_list(tfunc->get_arglist(), include_types) + ", ";
+  }
+
+  if (include_types) {
+    t_type* ttype = tfunc->get_returntype();
+    arglist += "org.vertx.java.core.AsyncResultHandler<" + type_name(ttype, true) + "> ";
+  }
+  arglist += "handler";
 
   return arglist;
 }
@@ -4277,6 +4715,7 @@ void t_java_generator::generate_java_struct_clear(std::ofstream& out, t_struct* 
 // generates java method to serialize (in the Java sense) the object
 void t_java_generator::generate_java_struct_write_object(ofstream& out, t_struct* tstruct) {
   (void) tstruct;
+  if (vertx_) return;
   indent(out) << "private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {" << endl;
   indent(out) << "  try {" << endl;
   indent(out) << "    write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));" << endl;
@@ -4288,6 +4727,7 @@ void t_java_generator::generate_java_struct_write_object(ofstream& out, t_struct
 
 // generates java method to serialize (in the Java sense) the object
 void t_java_generator::generate_java_struct_read_object(ofstream& out, t_struct* tstruct) {
+  if (vertx_) return;
   indent(out) << "private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {" << endl;
   indent(out) << "  try {" << endl;
   if (!tstruct->is_union()) {
