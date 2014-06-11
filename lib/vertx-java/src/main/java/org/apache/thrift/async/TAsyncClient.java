@@ -21,10 +21,10 @@ package org.apache.thrift.async;
 
 public abstract class TAsyncClient {
 
-  protected final TAsyncClientManager manager;
+  protected final TAsyncClientManager clientManager;
 
-  public TAsyncClient(TAsyncClientManager manager) {
-    this.manager = manager;
+  public TAsyncClient(TAsyncClientManager clientManager) {
+    this.clientManager = clientManager;
   }
 
 }

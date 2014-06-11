@@ -21,6 +21,7 @@ package org.apache.thrift.server;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
+import org.apache.thrift.VertxInstanceHolder;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TEventBusServerTransport;
 import org.apache.thrift.transport.TTransport;
@@ -72,6 +73,8 @@ public class TEventBusServer extends TServer {
     vertx_ = args.vertx;
     listenAddress_ = args.listenAddress;
     handler_ = new IncomingMessageHandler();
+    // Make vertx instance globally accessable
+    VertxInstanceHolder.set(vertx_);
   }
 
   /**

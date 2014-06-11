@@ -34,8 +34,8 @@ import org.vertx.java.core.AsyncResultHandler;
 /**
  * Encapsulates an async method call
  * Need to generate:
- *   - protected void write_args(TProtocol out) throws TException
- *   - protected T getResult() throws TException
+ *   - protected void write_args(TProtocol oprot) throws TException
+ *   - protected T getResult(TProtocol iprot) throws TException
  * @param <T>
  */
 public abstract class TAsyncMethodCall<T> {
@@ -51,9 +51,9 @@ public abstract class TAsyncMethodCall<T> {
 
   private final int seqid;
 
-  protected TAsyncMethodCall(TAsyncClientManager clientManager, AsyncResultHandler<T> handler, boolean isOneway) {
-    this.clientManager = clientManager;
+  protected TAsyncMethodCall(AsyncResultHandler<T> handler, TAsyncClientManager clientManager, boolean isOneway) {
     this.handler = handler;
+    this.clientManager = clientManager;
     this.isOneway = isOneway;
     
     seqid = seqidGenerator.incrementAndGet();
@@ -107,15 +107,14 @@ public abstract class TAsyncMethodCall<T> {
   protected abstract T getResult(TProtocol iprot) throws TException;
 
   @SuppressWarnings("rawtypes")
-  protected void sendBase(TProtocol oprot, String methodName, TBase args) throws TException {
+  protected void writeMessage(TProtocol oprot, String methodName, TBase args) throws TException {
     oprot.writeMessageBegin(new TMessage(methodName, TMessageType.CALL, seqid));
     args.write(oprot);
     oprot.writeMessageEnd();
-    oprot.getTransport().flush();
   }
 
   @SuppressWarnings("rawtypes")
-  protected void receiveBase(TProtocol iprot, TBase result, String methodName) throws TException {
+  protected void readMessage(TProtocol iprot, TBase result, String methodName) throws TException {
     TMessage msg = iprot.readMessageBegin();
     if (msg.type == TMessageType.EXCEPTION) {
       TApplicationException x = TApplicationException.read(iprot);

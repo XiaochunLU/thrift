@@ -31,6 +31,7 @@ import org.apache.thrift.transport.TTransportFactory;
  */
 public abstract class TServer {
 
+  @SuppressWarnings("unchecked")
   public static abstract class AbstractServerArgs<T extends AbstractServerArgs<T>> {
     TProcessorFactory processorFactory;
     TTransportFactory inputTransportFactory = new TTransportFactory();
@@ -113,7 +114,7 @@ public abstract class TServer {
 
   protected TServerEventHandler eventHandler_;
 
-  protected TServer(AbstractServerArgs args) {
+  protected TServer(AbstractServerArgs<?> args) {
     processorFactory_ = args.processorFactory;
     inputTransportFactory_ = args.inputTransportFactory;
     outputTransportFactory_ = args.outputTransportFactory;

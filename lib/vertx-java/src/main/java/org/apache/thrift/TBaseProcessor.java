@@ -8,7 +8,9 @@ import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
+import org.vertx.java.core.Vertx;
 
+@SuppressWarnings("rawtypes")
 public abstract class TBaseProcessor<I> implements TProcessor {
   private final I iface;
   private final Map<String,ProcessFunction<I, ? extends TBase>> processMap;
@@ -22,8 +24,11 @@ public abstract class TBaseProcessor<I> implements TProcessor {
     return Collections.unmodifiableMap(processMap);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public boolean process(TProtocol in, TProtocol out) throws TException {
+    checkOnWorker();
+
     TMessage msg = in.readMessageBegin();
     ProcessFunction fn = processMap.get(msg.name);
     if (fn == null) {
@@ -38,5 +43,11 @@ public abstract class TBaseProcessor<I> implements TProcessor {
     }
     fn.process(msg.seqid, in, out, iface);
     return true;
+  }
+
+  public void checkOnWorker() {
+    Vertx vertx = VertxInstanceHolder.get();
+    if (!vertx.isWorker())
+      throw new IllegalStateException("This processor must be run on a Vert.x worker thread!");
   }
 }

@@ -37,7 +37,7 @@ public abstract class AsyncProcessFunction<I, T, R> {
 
   public abstract T getEmptyArgsInstance();
 
-  public abstract Handler<AsyncResult<R>> getResultHandler(final TProtocol oprot, int seqid);
+  public abstract Handler<AsyncResult<R>> getResultHandler(final TProtocol oprot, final int seqid);
 
   public String getMethodName() {
     return methodName;

@@ -93,19 +93,10 @@ public class TBaseAsyncProcessor<I> implements TProcessor {
     private T result;
     private Throwable throwable;
 
-    /**
-     * Create a FutureResult that hasn't completed yet
-     */
     @SuppressWarnings("unused")
     AsyncProcessFuture() {
     }
 
-    /**
-     * Create a FutureResult that has already succeeded
-     * 
-     * @param result
-     *          The result
-     */
     AsyncProcessFuture(Handler<AsyncResult<T>> handler) {
       setHandler(handler);
     }
