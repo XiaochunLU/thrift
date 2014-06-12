@@ -8,7 +8,6 @@ import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
-import org.vertx.java.core.Vertx;
 
 @SuppressWarnings("rawtypes")
 public abstract class TBaseProcessor<I> implements TProcessor {
@@ -41,5 +40,10 @@ public abstract class TBaseProcessor<I> implements TProcessor {
     }
     fn.process(msg.seqid, in, out, iface);
     return true;
+  }
+  
+
+  public boolean isAsyncProcessor() {
+    return false;
   }
 }

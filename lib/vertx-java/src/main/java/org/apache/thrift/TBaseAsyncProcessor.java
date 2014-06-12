@@ -92,6 +92,10 @@ public class TBaseAsyncProcessor<I> implements TProcessor {
     return true;
   }
 
+  public boolean isAsyncProcessor() {
+    return true;
+  }
+  
   private static class AsyncProcessFuture<T> implements Future<T> {
     private boolean failed;
     private boolean succeeded;

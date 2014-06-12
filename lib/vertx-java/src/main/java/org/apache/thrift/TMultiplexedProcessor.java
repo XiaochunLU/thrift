@@ -19,10 +19,15 @@
 
 package org.apache.thrift;
 
-import org.apache.thrift.protocol.*;
-
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.thrift.protocol.TMessage;
+import org.apache.thrift.protocol.TMessageType;
+import org.apache.thrift.protocol.TMultiplexedProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.protocol.TProtocolDecorator;
 
 /**
  * <code>TMultiplexedProcessor</code> is a <code>TProcessor</code> allowing
@@ -140,4 +145,12 @@ public class TMultiplexedProcessor implements TProcessor {
         }
     }
 
+    public boolean isAsyncProcessor() {
+        for (Entry<String, TProcessor> e : SERVICE_PROCESSOR_MAP.entrySet()) {
+            if (!e.getValue().isAsyncProcessor())
+                return false;
+        }
+        return true;
+    }
+    
 }
