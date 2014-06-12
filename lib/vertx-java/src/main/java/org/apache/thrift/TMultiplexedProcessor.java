@@ -145,6 +145,10 @@ public class TMultiplexedProcessor implements TProcessor {
         }
     }
 
+    /**
+     * Only when all processors in {@link #SERVICE_PROCESSOR_MAP} are async,
+     * will this method return true.
+     */
     public boolean isAsyncProcessor() {
         for (Entry<String, TProcessor> e : SERVICE_PROCESSOR_MAP.entrySet()) {
             if (!e.getValue().isAsyncProcessor())

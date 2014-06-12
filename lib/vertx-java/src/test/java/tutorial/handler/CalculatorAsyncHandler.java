@@ -55,7 +55,8 @@ public class CalculatorAsyncHandler implements Calculator.AsyncIface {
         InvalidOperation io = new InvalidOperation();
         io.what = work.op.getValue();
         io.why = "Cannot divide by 0";
-        throw io;
+        future.setFailure(io);
+        return;
       }
       val = work.num1 / work.num2;
       break;
@@ -63,7 +64,8 @@ public class CalculatorAsyncHandler implements Calculator.AsyncIface {
       InvalidOperation io = new InvalidOperation();
       io.what = work.op.getValue();
       io.why = "Unknown operation";
-      throw io;
+      future.setFailure(io);
+      return;
     }
 
     SharedStruct entry = new SharedStruct();

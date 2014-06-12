@@ -48,22 +48,10 @@ public class TEventBusServer extends TServer {
   public static class Args extends TServer.AbstractServerArgs<Args> {
     final Vertx vertx;
     final String listenAddress;
-    Handler<AsyncResult<Void>> serveCompletionHandler = null;
-    Handler<AsyncResult<Void>> stopCompletionHandler = null;
 
     public Args(Vertx vertx, String listenAddress) {
       this.vertx = vertx;
       this.listenAddress = listenAddress;
-    }
-    
-    public Args serveCompletionHandler(Handler<AsyncResult<Void>> handler) {
-      this.serveCompletionHandler = handler;
-      return this;
-    }
-    
-    public Args stopCompletionHandler(Handler<AsyncResult<Void>> handler) {
-      this.stopCompletionHandler = handler;
-      return this;
     }
   }
 
@@ -82,15 +70,10 @@ public class TEventBusServer extends TServer {
    */
   private final IncomingMessageHandler handler_;
   
-  private Handler<AsyncResult<Void>> serveCompletionHandler_ = null;
-  private Handler<AsyncResult<Void>> stopCompletionHandler_ = null;
-
   public TEventBusServer(Args args) {
     super(args);
     vertx_ = args.vertx;
     listenAddress_ = args.listenAddress;
-    serveCompletionHandler_ = args.serveCompletionHandler;
-    stopCompletionHandler_ = args.stopCompletionHandler;
     handler_ = new IncomingMessageHandler();
   }
 
@@ -108,8 +91,6 @@ public class TEventBusServer extends TServer {
           LOGGER.info("handler registered to the specified address, start serving...");
           setServing(true);
         }
-        if (serveCompletionHandler_ != null)
-          serveCompletionHandler_.handle(event);
       }
     });
   }
@@ -127,8 +108,6 @@ public class TEventBusServer extends TServer {
           LOGGER.info("handler unregistered, server stopped.");
           setServing(false);
         }
-        if (stopCompletionHandler_ != null)
-          serveCompletionHandler_.handle(event);
       }
     });
   }
