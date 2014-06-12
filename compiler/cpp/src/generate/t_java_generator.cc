@@ -2770,29 +2770,33 @@ void t_java_generator::generate_service_vertx_client(t_service* tservice) {
 
     // Return method  
     indent(f_service_) << "public " + type_name(ret_type, true) + " getResult(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {" << endl;
-
     indent_up();
-    f_service_ <<
-      indent() << result_name << " result = new " << result_name << "();" << endl <<
-      indent() << "readMessage(iprot, result, \"" << funname << "\");" << endl;
 
-    // Careful, only return _result if not a void function
-    if (!(*f_iter)->get_returntype()->is_void()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ <<
-        indent() << "if (result." << generate_isset_check("success") << ") {" << endl <<
-        indent() << "  return result.success;" << endl <<
-        indent() << "}" << endl;
-    }
+        indent() << result_name << " result = new " << result_name << "();" << endl <<
+        indent() << "readMessage(iprot, result, \"" << funname << "\");" << endl;
 
-    for (fld_iter = xceptions.begin(); fld_iter != xceptions.end(); ++fld_iter) {
-      f_service_ <<
-        indent() << "if (result." << (*fld_iter)->get_name() << " != null) {" << endl <<
-        indent() << "  throw result." << (*fld_iter)->get_name() << ";" << endl <<
-        indent() << "}" << endl;
+      // Careful, only return _result if not a void function
+      if (!(*f_iter)->get_returntype()->is_void()) {
+        f_service_ <<
+          indent() << "if (result." << generate_isset_check("success") << ") {" << endl <<
+          indent() << "  return result.success;" << endl <<
+          indent() << "}" << endl;
+      }
+
+      for (fld_iter = xceptions.begin(); fld_iter != xceptions.end(); ++fld_iter) {
+        f_service_ <<
+          indent() << "if (result." << (*fld_iter)->get_name() << " != null) {" << endl <<
+          indent() << "  throw result." << (*fld_iter)->get_name() << ";" << endl <<
+          indent() << "}" << endl;
+      }
+    } else {
+      indent(f_service_) << "// One-way, do nothing" << endl;
     }
 
     // If you get here it's an exception, unless a void function
-    if ((*f_iter)->get_returntype()->is_void()) {
+    if ((*f_iter)->is_oneway() || (*f_iter)->get_returntype()->is_void()) {
       indent(f_service_) << "return null;" << endl;
     } else {
       f_service_ <<
