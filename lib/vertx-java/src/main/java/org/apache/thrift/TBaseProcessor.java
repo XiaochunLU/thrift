@@ -27,8 +27,6 @@ public abstract class TBaseProcessor<I> implements TProcessor {
   @SuppressWarnings("unchecked")
   @Override
   public boolean process(TProtocol in, TProtocol out) throws TException {
-    checkOnWorker();
-
     TMessage msg = in.readMessageBegin();
     ProcessFunction fn = processMap.get(msg.name);
     if (fn == null) {
@@ -43,11 +41,5 @@ public abstract class TBaseProcessor<I> implements TProcessor {
     }
     fn.process(msg.seqid, in, out, iface);
     return true;
-  }
-
-  public void checkOnWorker() {
-    Vertx vertx = VertxInstanceHolder.get();
-    if (!vertx.isWorker())
-      throw new IllegalStateException("This processor must be run on a Vert.x worker thread!");
   }
 }

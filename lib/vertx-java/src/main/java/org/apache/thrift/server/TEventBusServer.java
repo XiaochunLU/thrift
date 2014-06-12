@@ -21,7 +21,6 @@ package org.apache.thrift.server;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
-import org.apache.thrift.VertxInstanceHolder;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TEventBusServerTransport;
 import org.apache.thrift.transport.TTransport;
@@ -49,10 +48,22 @@ public class TEventBusServer extends TServer {
   public static class Args extends TServer.AbstractServerArgs<Args> {
     final Vertx vertx;
     final String listenAddress;
+    Handler<AsyncResult<Void>> serveCompletionHandler = null;
+    Handler<AsyncResult<Void>> stopCompletionHandler = null;
 
     public Args(Vertx vertx, String listenAddress) {
       this.vertx = vertx;
       this.listenAddress = listenAddress;
+    }
+    
+    public Args serveCompletionHandler(Handler<AsyncResult<Void>> handler) {
+      this.serveCompletionHandler = handler;
+      return this;
+    }
+    
+    public Args stopCompletionHandler(Handler<AsyncResult<Void>> handler) {
+      this.stopCompletionHandler = handler;
+      return this;
     }
   }
 
@@ -66,15 +77,21 @@ public class TEventBusServer extends TServer {
    */
   private String listenAddress_;
 
-  private IncomingMessageHandler handler_;
+  /**
+   * The handler for incoming message processing
+   */
+  private final IncomingMessageHandler handler_;
   
+  private Handler<AsyncResult<Void>> serveCompletionHandler_ = null;
+  private Handler<AsyncResult<Void>> stopCompletionHandler_ = null;
+
   public TEventBusServer(Args args) {
     super(args);
     vertx_ = args.vertx;
     listenAddress_ = args.listenAddress;
+    serveCompletionHandler_ = args.serveCompletionHandler;
+    stopCompletionHandler_ = args.stopCompletionHandler;
     handler_ = new IncomingMessageHandler();
-    // Make vertx instance globally accessable
-    VertxInstanceHolder.set(vertx_);
   }
 
   /**
@@ -82,6 +99,8 @@ public class TEventBusServer extends TServer {
    */
   @Override
   public void serve() {
+    if (!processorFactory_.isAsyncProcessor())
+      checkOnWorker(vertx_);
     vertx_.eventBus().registerHandler(listenAddress_, handler_, new Handler<AsyncResult<Void>>() {
       @Override
       public void handle(AsyncResult<Void> event) {
@@ -89,6 +108,8 @@ public class TEventBusServer extends TServer {
           LOGGER.info("handler registered to the specified address, start serving...");
           setServing(true);
         }
+        if (serveCompletionHandler_ != null)
+          serveCompletionHandler_.handle(event);
       }
     });
   }
@@ -106,6 +127,8 @@ public class TEventBusServer extends TServer {
           LOGGER.info("handler unregistered, server stopped.");
           setServing(false);
         }
+        if (stopCompletionHandler_ != null)
+          serveCompletionHandler_.handle(event);
       }
     });
   }
@@ -154,4 +177,8 @@ public class TEventBusServer extends TServer {
     throw new UnsupportedOperationException("Not implemented.");
   }
 
+  public void checkOnWorker(Vertx vertx) {
+    if (!vertx.isWorker())
+      throw new IllegalStateException("Synchronized processors must be run on a Vert.x worker thread!");
+  }
 }

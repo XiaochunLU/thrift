@@ -60,6 +60,7 @@ public abstract class TAsyncMethodCall<T> {
   }
 
   public void start(TProtocol oprot) {
+    onStart();
     Exception cause = null;
     try {
       write_args(oprot);
@@ -89,7 +90,7 @@ public abstract class TAsyncMethodCall<T> {
     try {
       result = getResult(iprot);
     } catch (TException te) {
-      LOGGER.error("Thrift error occurred during recving response", te);
+      //LOGGER.error("Thrift error occurred during recving response", te);
       cause = te;
     } catch (Exception e) {
       LOGGER.error("Error occurred during recving response", e);
@@ -125,13 +126,17 @@ public abstract class TAsyncMethodCall<T> {
     iprot.readMessageEnd();
   }
 
-  private void onComplete() {
+  private final void onStart() {
+    clientManager.registerMethodCall(seqid, this);
+  }
+  
+  private final void onComplete() {
     clientManager.unregisterMethodCall(seqid, this);
   }
 
-  private void onError(Exception e) {
+  private final void onError(Exception e) {
     handler.handle(new FailedResult<T>(e));
-    clientManager.unregisterMethodCall(seqid, this);
+    onComplete();
   }
 
   private static final class SucceededResult<U> implements AsyncResult<U> {

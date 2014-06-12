@@ -82,7 +82,13 @@ public class TBaseAsyncProcessor<I> implements TProcessor {
     in.readMessageEnd();
 
     // start off processing function
-    fn.start(iface, args, new AsyncProcessFuture(fn.getResultHandler(out, msg.seqid)));
+    AsyncProcessFuture future = new AsyncProcessFuture(fn.getResultHandler(out, msg.seqid));
+    try {
+      fn.start(iface, args, future);
+    } catch (Exception e) {
+      if (!future.complete())
+        future.setFailure(e);
+    }
     return true;
   }
 
@@ -147,6 +153,9 @@ public class TBaseAsyncProcessor<I> implements TProcessor {
      */
     @Override
     public Future<T> setHandler(Handler<AsyncResult<T>> handler) {
+      if (this.handler != null) {
+        throw new IllegalStateException("Not allowed to set another handler.");
+      }
       this.handler = handler;
       checkCallHandler();
       return this;
