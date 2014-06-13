@@ -3,6 +3,7 @@ package vertx.tests.eventbus.peer;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.TEventBusClientManager;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.transport.TEventBusTransport;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.AsyncResultHandler;
@@ -39,6 +40,20 @@ public class EventBusTestClient extends TestClientBase {
     }
   }
 
+  public void testCompactProtocol() {
+    TEventBusClientManager clientManager = new TEventBusClientManager(
+        new TEventBusTransport.Args(vertx.eventBus(), address),
+        new TCompactProtocol.Factory());
+    Calculator.VertxClient client = new Calculator.VertxClient(clientManager);
+
+    try {
+      performNormalScenaro(client);
+    } catch (TException e) {
+      e.printStackTrace();
+      tu.azzert(false, e.getMessage());
+    }
+  }
+  
   private void performNormalScenaro(Calculator.VertxClient client) throws TException {
     final TestCompleteCounter counter = new TestCompleteCounter(new VoidHandler() {
       @Override

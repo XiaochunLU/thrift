@@ -20,23 +20,7 @@ public class EventBusServiceTest extends TestBase {
 
   @Test
   public void testSyncProcessor() {
-    String serverDeployId = "", clientDeployId = "";
-    try {
-      serverDeployId = startApp(true, EventBusTestServer.class.getName());
-      clientDeployId = startApp(EventBusTestClient.class.getName());
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    startTest("testSyncProcessorInitialize");
-    startTest("testNormalScenaro");
-
-    try {
-      stopApp(serverDeployId);
-      stopApp(clientDeployId);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    testPeer("testSyncProcessorInitialize", "testNormalScenaro", true);
   }
 
   @Test
@@ -59,16 +43,25 @@ public class EventBusServiceTest extends TestBase {
 
   @Test
   public void testAsyncProcessor() {
+    testPeer("testAsyncProcessorInitialize", "testNormalScenaro", false);
+  }
+
+  @Test
+  public void testCompactProtocol() {
+    testPeer("testCompactProtocolInitialize", "testCompactProtocol", true);
+  }
+
+  private void testPeer(String serverAction, String clientAction, boolean serverOnWorker) {
     String serverDeployId = "", clientDeployId = "";
     try {
-      serverDeployId = startApp(EventBusTestServer.class.getName());
+      serverDeployId = startApp(serverOnWorker, EventBusTestServer.class.getName());
       clientDeployId = startApp(EventBusTestClient.class.getName());
     } catch (Exception e) {
       e.printStackTrace();
     }
 
-    startTest("testAsyncProcessorInitialize");
-    startTest("testNormalScenaro");
+    startTest(serverAction);
+    startTest(clientAction);
 
     try {
       stopApp(serverDeployId);
@@ -77,5 +70,4 @@ public class EventBusServiceTest extends TestBase {
       e.printStackTrace();
     }
   }
-
 }
