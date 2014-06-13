@@ -1,6 +1,5 @@
 package vertx.tests.eventbus.peer;
 
-import org.apache.thrift.TException;
 import org.apache.thrift.async.TEventBusClientManager;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
@@ -31,13 +30,7 @@ public class EventBusTestClient extends TestClientBase {
         new TEventBusTransport.Args(vertx.eventBus(), address),
         new TBinaryProtocol.Factory());
     Calculator.VertxClient client = new Calculator.VertxClient(clientManager);
-    
-    try {
-      performNormalScenaro(client);
-    } catch (TException e) {
-      e.printStackTrace();
-      tu.azzert(false, e.getMessage());
-    }
+    performNormalScenaro(client);
   }
 
   public void testCompactProtocol() {
@@ -45,16 +38,10 @@ public class EventBusTestClient extends TestClientBase {
         new TEventBusTransport.Args(vertx.eventBus(), address),
         new TCompactProtocol.Factory());
     Calculator.VertxClient client = new Calculator.VertxClient(clientManager);
-
-    try {
-      performNormalScenaro(client);
-    } catch (TException e) {
-      e.printStackTrace();
-      tu.azzert(false, e.getMessage());
-    }
+    performNormalScenaro(client);
   }
   
-  private void performNormalScenaro(Calculator.VertxClient client) throws TException {
+  private void performNormalScenaro(Calculator.VertxClient client) {
     final TestCompleteCounter counter = new TestCompleteCounter(new VoidHandler() {
       @Override
       public void handle() {

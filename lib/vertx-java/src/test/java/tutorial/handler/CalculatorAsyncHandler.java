@@ -1,7 +1,6 @@
 package tutorial.handler;
 import java.util.HashMap;
 
-import org.apache.thrift.TException;
 import org.vertx.java.core.Future;
 
 import shared.SharedStruct;
@@ -19,25 +18,25 @@ public class CalculatorAsyncHandler implements Calculator.AsyncIface {
   }
   
   @Override
-  public void getStruct(int key, Future<SharedStruct> future) throws TException {
+  public void getStruct(int key, Future<SharedStruct> future) {
     System.out.println("getStruct(" + key + ")");
     future.setResult(log.get(key));
   }
 
   @Override
-  public void ping(Future<Void> future) throws TException {
+  public void ping(Future<Void> future) {
     System.out.println("ping()");
     future.setResult(null);
   }
 
   @Override
-  public void add(int n1, int n2, Future<Integer> future) throws TException {
+  public void add(int n1, int n2, Future<Integer> future) {
     System.out.println("add(" + n1 + "," + n2 + ")");
     future.setResult(n1 + n2);
   }
 
   @Override
-  public void calculate(int logid, Work work, Future<Integer> future) throws TException {
+  public void calculate(int logid, Work work, Future<Integer> future) {
     System.out.println("calculate(" + logid + ", {" + work.op + "," + work.num1 + "," + work.num2 + "})");
     int val = 0;
     switch (work.op) {
@@ -77,7 +76,7 @@ public class CalculatorAsyncHandler implements Calculator.AsyncIface {
   }
 
   @Override
-  public void zip(Future<Void> future) throws TException {
+  public void zip(Future<Void> future) {
     System.out.println("zip()");
     future.setResult(null);
   }

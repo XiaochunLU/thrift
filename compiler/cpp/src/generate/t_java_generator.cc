@@ -160,7 +160,7 @@ public:
   void generate_service_vertx_server  (t_service* tservice);
   void generate_process_function      (t_service* tservice, t_function* tfunction);
   void generate_process_async_function(t_service* tservice, t_function* tfunction);
-  void generate_process_vertx_function(t_service* tservice, t_function* tfunction);
+  void generate_process_vertx_server_function(t_service* tservice, t_function* tfunction);
 
 
   void generate_java_union(t_struct* tstruct);
@@ -2349,7 +2349,7 @@ void t_java_generator::generate_service_vertx_server_interface(t_service* tservi
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    indent(f_service_) << "public " << function_signature_vertx_server(*f_iter, true) << " throws org.apache.thrift.TException;" << endl << endl;
+    indent(f_service_) << "public " << function_signature_vertx_server(*f_iter, true) << ";" << endl << endl;
   }
   indent_down();
   f_service_ << indent() << "}" << endl << endl;
@@ -2368,7 +2368,7 @@ void t_java_generator::generate_service_vertx_client_interface(t_service* tservi
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    indent(f_service_) << "public " << function_signature_vertx_client(*f_iter, true) << " throws org.apache.thrift.TException;" << endl << endl;
+    indent(f_service_) << "public " << function_signature_vertx_client(*f_iter, true) << ";" << endl << endl;
   }
   indent_down();
   f_service_ << indent() << "}" << endl << endl;
@@ -2724,7 +2724,7 @@ void t_java_generator::generate_service_vertx_client(t_service* tservice) {
     string result_name = (*f_iter)->get_name() + "_result";
 
     // Main method body   
-    indent(f_service_) << "public " << function_signature_vertx_client(*f_iter, false) << " throws org.apache.thrift.TException {" << endl;
+    indent(f_service_) << "public " << function_signature_vertx_client(*f_iter, false) << " {" << endl;
     indent(f_service_) << "  " << funclassname << " methodCall = new " + funclassname + "(" << function_call_arglist_vertx_client(*f_iter, false, false) << ", clientManager);" << endl;
     indent(f_service_) << "  clientManager.call(methodCall);" << endl;
     indent(f_service_) << "}" << endl;
@@ -2741,7 +2741,7 @@ void t_java_generator::generate_service_vertx_client(t_service* tservice) {
     }
 
     // Constructor
-    indent(f_service_) << "public " + funclassname + "(" + function_call_arglist_vertx_client(*f_iter, false, true) << ", org.apache.thrift.async.TAsyncClientManager clientManager) throws org.apache.thrift.TException {" << endl;
+    indent(f_service_) << "public " + funclassname + "(" + function_call_arglist_vertx_client(*f_iter, false, true) << ", org.apache.thrift.async.TAsyncClientManager clientManager) {" << endl;
     indent(f_service_) << "  super(handler, clientManager, " << ((*f_iter)->is_oneway() ? "true" : "false") << ");" << endl;
 
     // Assign member variables
@@ -2966,14 +2966,14 @@ void t_java_generator::generate_service_vertx_server(t_service* tservice) {
 
   // Generate the process subfunctions
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    generate_process_vertx_function(tservice, *f_iter);
+    generate_process_vertx_server_function(tservice, *f_iter);
   }
 
   indent_down();
   indent(f_service_) << "}" << endl << endl;
 }
 
-void t_java_generator::generate_process_vertx_function(t_service* tservice,
+void t_java_generator::generate_process_vertx_server_function(t_service* tservice,
   t_function* tfunction) {
     string argsname = tfunction->get_name() + "_args";
 
@@ -3036,12 +3036,12 @@ void t_java_generator::generate_process_vertx_function(t_service* tservice,
       indent(f_service_) <<"byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;"<<endl;
       indent(f_service_) <<"Throwable e = event.cause();"<<endl;
       indent(f_service_) <<"org.apache.thrift.TBase msg;"<<endl;
-      indent(f_service_) <<resultname<<" result = new "<<resultname<<"();"<<endl;
 
       t_struct* xs = tfunction->get_xceptions();
       const std::vector<t_field*>& xceptions = xs->get_members();
       vector<t_field*>::const_iterator x_iter;
       if (xceptions.size() > 0) {
+        indent(f_service_) <<resultname<<" result = new "<<resultname<<"();"<<endl;
         for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
           if (x_iter != xceptions.begin()) indent(f_service_) << "else ";
           indent(f_service_) << "if (e instanceof " << type_name((*x_iter)->get_type(), false, false)<<") {" << endl;
