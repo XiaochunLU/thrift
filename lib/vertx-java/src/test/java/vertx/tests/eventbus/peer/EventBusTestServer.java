@@ -1,5 +1,6 @@
 package vertx.tests.eventbus.peer;
 
+import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.server.TEventBusServer;
 import org.vertx.java.testframework.TestClientBase;
 
@@ -50,6 +51,17 @@ public class EventBusTestServer extends TestClientBase {
     Calculator.AsyncProcessor processor = new Calculator.AsyncProcessor(handler);
     TEventBusServer.Args args = new TEventBusServer.Args(vertx, address);
     args.processor(processor);
+    TEventBusServer server = new TEventBusServer(args);
+    server.serve();
+    tu.testComplete();
+  }
+
+  public void testCompactProtocolInitialize() {
+    CalculatorHandler handler = new CalculatorHandler();
+    Calculator.Processor processor = new Calculator.Processor(handler);
+    TEventBusServer.Args args = new TEventBusServer.Args(vertx, address);
+    args.processor(processor)
+        .protocolFactory(new TCompactProtocol.Factory());
     TEventBusServer server = new TEventBusServer(args);
     server.serve();
     tu.testComplete();
