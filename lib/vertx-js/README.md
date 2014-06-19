@@ -15,6 +15,9 @@ It is ported from the nodejs lib. The usages are very similiar.
   - HTTP (TODO)
   - WebSocket (TODO)
 
+###TODO:
+  - JavaScript supports only numeric doubles, therefore the largest integer value which can be represented in JavaScript is +/-2^53, and I64 could not be represented precisely for some very big integers out of the range. nodejs uses node-int64 (https://github.com/broofa/node-int64) to represent I64, but it makes calculations inconvenient. We need to think of a way to tackle the precision problem. One way is to wrap the java BigInteger class.
+
 ##Compiler
 Specify _--gen js:vertx_ to generate your thrift files into javascript source for using with this lib.
 
