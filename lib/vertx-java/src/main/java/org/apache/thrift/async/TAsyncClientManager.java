@@ -20,6 +20,7 @@ package org.apache.thrift.async;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TMessage;
@@ -43,8 +44,11 @@ public abstract class TAsyncClientManager implements AsyncResponseHandler {
   protected TProtocolFactory inputProtocolFactory;
   protected TProtocolFactory outputProtocolFactory;
 
+  // We have to ensure that different method calls have different seqid's
+  private final AtomicInteger seqidGenerator = new AtomicInteger(0);
+  
   // TODO: Is it necessary to use a concurrent map?
-  private Map<Integer, TAsyncMethodCall> seqid2MethodCall = new ConcurrentHashMap<>();
+  private final Map<Integer, TAsyncMethodCall> seqid2MethodCall = new ConcurrentHashMap<>();
 
   protected TAsyncClientManager() {
   }
@@ -61,6 +65,10 @@ public abstract class TAsyncClientManager implements AsyncResponseHandler {
 
   public abstract void call(TAsyncMethodCall method);
 
+  public int nextSeqId() {
+    return seqidGenerator.incrementAndGet();
+  }
+  
   public void registerMethodCall(int seqid, TAsyncMethodCall methodCall) {
     seqid2MethodCall.put(seqid, methodCall);
   }

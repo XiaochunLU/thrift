@@ -18,8 +18,6 @@
  */
 package org.apache.thrift.async;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
@@ -42,9 +40,6 @@ public abstract class TAsyncMethodCall<T> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TAsyncMethodCall.class.getName());
 
-  // We have to ensure that different method calls have different seqid's
-  private static final AtomicInteger seqidGenerator = new AtomicInteger(0);
-  
   private final TAsyncClientManager clientManager;
   private final AsyncResultHandler<T> handler;
   private final boolean isOneway;
@@ -56,7 +51,7 @@ public abstract class TAsyncMethodCall<T> {
     this.clientManager = clientManager;
     this.isOneway = isOneway;
     
-    seqid = seqidGenerator.incrementAndGet();
+    seqid = clientManager.nextSeqId();
   }
 
   public void start(TProtocol oprot) {
