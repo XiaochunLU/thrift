@@ -8,18 +8,18 @@ One is server and the other is client, as their names denote. Both are Vert.x mo
 
 ## Steps to get up and running
 1. You'd better install _libthrift-vertx-java_ into your local repo, because it may not in the public repos right now. Fire up your console, navigate to _lib/vertx-java_ folder, run
-  ```
-  mvn install
-  ```
+```
+mvn install
+```
 2. Navigate to _tutorial/vertx-java-tutorial-server_, run
-  ```
-  mvn install
-  mvn vertx:runMod
-  ```
-  to start up the server.
+```
+mvn install
+mvn vertx:runMod
+```
+   to start up the server.
 3. Navigate to _tutorial/vertx-java-tutorial-client_, run
-  ```
-  mvn install
-  mvn vertx:runMod
-  ```
-  to start up the client.
+```
+mvn install
+mvn vertx:runMod
+```
+   to start up the client.
