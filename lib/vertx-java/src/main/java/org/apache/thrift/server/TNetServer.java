@@ -162,8 +162,10 @@ public class TNetServer extends TServer {
           // Client died, just move on
         } catch (TException tx) {
           LOGGER.error("Thrift error occurred during processing of message.", tx);
+          TNetServer.this.handleException(outputProtocol, tx);
         } catch (Exception x) {
           LOGGER.error("Error occurred during processing of message.", x);
+          TNetServer.this.handleException(outputProtocol, x);
         }
 
         if (inputTransport != null)

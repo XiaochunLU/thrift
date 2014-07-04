@@ -139,8 +139,10 @@ public class TEventBusServer extends TServer {
         // Client died, just move on
       } catch (TException tx) {
         LOGGER.error("Thrift error occurred during processing of message.", tx);
+        handleException(outputProtocol, tx);
       } catch (Exception x) {
         LOGGER.error("Error occurred during processing of message.", x);
+        handleException(outputProtocol, x);
       }
 
       if (inputTransport != null)

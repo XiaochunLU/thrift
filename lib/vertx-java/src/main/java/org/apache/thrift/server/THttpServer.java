@@ -31,8 +31,8 @@ public class THttpServer extends TServer {
     private final int port;
     private String host = null;
     private String uri = null;
-    private Map<String /*uri*/, TProcessor> uri2prcs = new HashMap<>();
-    private Set<String> cors = new HashSet<>();
+    private Map<String /*uri*/, TProcessor> uri2prcs = new HashMap<String, TProcessor>();
+    private Set<String> cors = new HashSet<String>();
 
     public Args(Vertx vertx, int port) {
       this.vertx = vertx;
@@ -244,10 +244,10 @@ public class THttpServer extends TServer {
         // Client died, just move on
       } catch (TException tx) {
         LOGGER.error("Thrift error occurred during processing of message.", tx);
-        request.response().setStatusCode(500).end();
+        request.response().setStatusCode(500).end("Uncaught exception: " + tx.getMessage());
       } catch (Exception x) {
         LOGGER.error("Error occurred during processing of message.", x);
-        request.response().setStatusCode(500).end();
+        request.response().setStatusCode(500).end("Uncaught exception: " + x.getMessage());
       }
 
       if (inputTransport != null)
