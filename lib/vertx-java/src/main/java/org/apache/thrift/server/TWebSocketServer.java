@@ -171,10 +171,8 @@ public class TWebSocketServer extends TServer {
         // Client died, just move on
       } catch (TException tx) {
         LOGGER.error("Thrift error occurred during processing of message.", tx);
-        TWebSocketServer.this.handleException(outputProtocol, tx);
       } catch (Exception x) {
         LOGGER.error("Error occurred during processing of message.", x);
-        TWebSocketServer.this.handleException(outputProtocol, x);
       }
 
       if (inputTransport != null)

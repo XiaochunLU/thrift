@@ -24,6 +24,8 @@ import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TMessage;
+import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -209,20 +211,5 @@ public abstract class TServer {
 
   public TServerEventHandler getEventHandler() {
     return eventHandler_;
-  }
-  
-  protected void handleException(TProtocol oprot, Exception ex) {
-	  try {
-	    TApplicationException ae = null;
-	      if (ex instanceof TApplicationException) {
-	    	  ((TApplicationException) ex).write(oprot);
-	      } else if (ex instanceof TProtocolException) {
-	    	  ae = new TApplicationException(TApplicationException.PROTOCOL_ERROR, ex.getMessage());
-	      } else {
-	    	  ae = new TApplicationException(TApplicationException.INTERNAL_ERROR,
-	    			  "Uncaught exception: " + ex.getClass().getName() + ", " + ex.getMessage());
-	      }
-	      if (ae != null) ae.write(oprot);
-    } catch (TException ignore) {}
   }
 }
