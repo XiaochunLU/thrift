@@ -49,7 +49,7 @@ public class TAsyncClientManager implements AsyncResponseHandler {
   private final AtomicInteger seqidGenerator = new AtomicInteger(0);
   
   // It is safe here to use a HashMap since a verticle instance is single-threaded.
-  private final Map<Integer, TAsyncMethodCall> seqid2MethodCall = new HashMap<>();
+  private final Map<Integer, TAsyncMethodCall> seqid2MethodCall = new HashMap<Integer, TAsyncMethodCall>();
 
   public TAsyncClientManager(TClientTransport transport, TProtocolFactory protocolFactory) {
     this(transport, protocolFactory, protocolFactory);

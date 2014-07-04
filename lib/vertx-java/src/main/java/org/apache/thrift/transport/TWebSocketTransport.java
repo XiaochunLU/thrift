@@ -85,7 +85,7 @@ public class TWebSocketTransport extends TClientSocketBasedTransport {
     
     public Args addSubprotocol(String subprotocol) {
       if (subprotocols == null)
-        subprotocols = new HashSet<>();
+        subprotocols = new HashSet<String>();
       subprotocols.add(subprotocol);
       return this;
     }

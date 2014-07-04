@@ -70,7 +70,7 @@ public abstract class TClientSocketBasedTransport extends TClientTransport {
   }
 
   protected class PendingOutputBuffers {
-    Queue<WrappedOutputBuffer> queue = new LinkedList<>();
+    Queue<WrappedOutputBuffer> queue = new LinkedList<WrappedOutputBuffer>();
     
     public void offer(int seqid, Buffer outputBuffer) {
       queue.offer(new WrappedOutputBuffer(seqid, outputBuffer));
