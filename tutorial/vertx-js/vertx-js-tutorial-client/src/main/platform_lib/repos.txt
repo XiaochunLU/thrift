@@ -2,7 +2,7 @@
 mavenLocal:D:/build/Apache/mvn-repo
 
 # Maven central
-maven:http://repo2.maven.org/maven2
+maven:http://172.16.10.223:8081/nexus/content/groups/public/
 
 # Sonatype snapshots
 maven:http://oss.sonatype.org/content/repositories/snapshots

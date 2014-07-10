@@ -19,15 +19,9 @@
 
 package org.apache.thrift.server;
 
-import org.apache.thrift.TApplicationException;
-import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TMessage;
-import org.apache.thrift.protocol.TMessageType;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransportFactory;
 import org.vertx.java.core.ServerSSLSupport;
@@ -97,9 +91,9 @@ public abstract class TServer {
       extends AbstractServerArgs<AbstractServerArgsWithSSLSupport<T>> {
     boolean ssl = false;
     String keyStorePath;
-    String keyStorePassword = "";
+    String keyStorePassword;
     String trustStorePath;
-    String trustStorePassword = "";
+    String trustStorePassword;
     boolean clientAuthRequired = false;
     
     public AbstractServerArgsWithSSLSupport() { }

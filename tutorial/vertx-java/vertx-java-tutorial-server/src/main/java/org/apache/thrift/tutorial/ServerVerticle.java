@@ -24,7 +24,7 @@ import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.server.TEventBusServer;
 import org.apache.thrift.server.THttpServer;
-import org.apache.thrift.server.TNetServer;
+import org.apache.thrift.server.TFramedNetServer;
 import org.apache.thrift.server.TWebSocketServer;
 import org.vertx.java.platform.Verticle;
 
@@ -34,7 +34,7 @@ import tutorial.handler.CalculatorAsyncHandler;
 public class ServerVerticle extends Verticle {
 
   private TEventBusServer eventBusServer = null;
-  private TNetServer netServer = null;
+  private TFramedNetServer netServer = null;
   private TWebSocketServer wsServer = null;
   private THttpServer httpServer = null;
   
@@ -54,10 +54,10 @@ public class ServerVerticle extends Verticle {
 
     // Start TCP socket server
     int netPort = container.config().getInteger("net_port");
-    TNetServer.Args netArgs = new TNetServer.Args(vertx, netPort);
+    TFramedNetServer.Args netArgs = new TFramedNetServer.Args(vertx, netPort);
     netArgs.processor(processor)
         .protocolFactory(new TBinaryProtocol.Factory());
-    netServer = new TNetServer(netArgs);
+    netServer = new TFramedNetServer(netArgs);
     netServer.serve();
     container.logger().info("NetServer listening on port: " + netPort + " (expecting TBinaryProtocol).");
 

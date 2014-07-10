@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.apache.thrift.transport;
 
 import org.apache.thrift.async.AsyncResponseHandler;
@@ -44,10 +63,9 @@ public abstract class TClientTransport extends TTransport {
     boolean ssl = false;
     boolean trustAll = false;
     String trustStorePath;
-    String trustStorePassword = "";
-    boolean clientAuthRequired = false;
+    String trustStorePassword;
     String keyStorePath;
-    String keyStorePassword = "";
+    String keyStorePassword;
 
     public AbstractArgsWithSSLSupport(Vertx vertx, int port) {
       this(vertx, port, "localhost", DEFAULT_TIMEOUT);
@@ -69,12 +87,12 @@ public abstract class TClientTransport extends TTransport {
         return;
       client.setSSL(true);
       if (trustAll) {
-        client.setTrustAll(trustAll);
+        client.setTrustAll(true);
       } else {
         client.setTrustStorePath(trustStorePath);
         client.setTrustStorePassword(trustStorePassword);
       }
-      if (clientAuthRequired) {
+      if (keyStorePath != null && keyStorePassword != null) {
         client.setKeyStorePath(keyStorePath);
         client.setKeyStorePassword(keyStorePassword);
       }
@@ -97,11 +115,6 @@ public abstract class TClientTransport extends TTransport {
 
     public T setTrustStorePassword(String trustStorePassword) {
       this.trustStorePassword = trustStorePassword;
-      return (T) this;
-    }
-
-    public T setClientAuthRequired(boolean clientAuthRequired) {
-      this.clientAuthRequired = clientAuthRequired;
       return (T) this;
     }
 

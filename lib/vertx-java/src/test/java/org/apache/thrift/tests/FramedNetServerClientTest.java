@@ -19,13 +19,13 @@
 
 package org.apache.thrift.tests;
 
-import org.apache.thrift.tests.peer.EventBusTestClient;
-import org.apache.thrift.tests.peer.EventBusTestServer;
+import org.apache.thrift.tests.peer.FramedNetTestClient;
+import org.apache.thrift.tests.peer.FramedNetTestServer;
 import org.junit.Test;
 import org.vertx.java.testframework.TestBase;
 
 
-public class EventBusServerClientTest extends TestBase {
+public class FramedNetServerClientTest extends TestBase {
 
   @Override
   protected void setUp() throws Exception {
@@ -38,48 +38,25 @@ public class EventBusServerClientTest extends TestBase {
   }
 
   @Test
-  public void testSyncProcessor() {
-    testPeer("testSyncProcessorInitialize", "testNormalScenaro", true);
-  }
-
-  @Test
-  public void testSyncProcessorOnNonWorker() {
-    String serverDeployId = "";
-    try {
-      serverDeployId = startApp(false, EventBusTestServer.class.getName());
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    startTest("testSyncProcessorOnNonWorker");
-    
-    try {
-      stopApp(serverDeployId);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
-  @Test
-  public void testAsyncProcessor() {
-    testPeer("testAsyncProcessorInitialize", "testNormalScenaro", false);
+  public void testBinaryProtocol() {
+    testPeer("testBinaryProtocolInitialize", "testBinaryProtocol", true);
   }
 
   @Test
   public void testCompactProtocol() {
-    testPeer("testCompactProtocolInitialize", "testCompactProtocol", true);
+    testPeer("testCompactProtocolInitialize", "testCompactProtocol", false);
   }
 
   @Test
   public void testJSONProtocol() {
-    testPeer("testJSONProtocolInitialize", "testJSONProtocol", true);
+    testPeer("testJSONProtocolInitialize", "testJSONProtocol", false);
   }
 
   private void testPeer(String serverAction, String clientAction, boolean serverOnWorker) {
     String serverDeployId = "", clientDeployId = "";
     try {
-      serverDeployId = startApp(serverOnWorker, EventBusTestServer.class.getName());
-      clientDeployId = startApp(EventBusTestClient.class.getName());
+      serverDeployId = startApp(serverOnWorker, FramedNetTestServer.class.getName());
+      clientDeployId = startApp(FramedNetTestClient.class.getName());
     } catch (Exception e) {
       e.printStackTrace();
     }

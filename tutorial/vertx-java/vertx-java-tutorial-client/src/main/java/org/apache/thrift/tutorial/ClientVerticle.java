@@ -25,7 +25,7 @@ import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.transport.TEventBusTransport;
 import org.apache.thrift.transport.THttpClientTransport;
-import org.apache.thrift.transport.TNetClientTransport;
+import org.apache.thrift.transport.TFramedNetClientTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TWebSocketTransport;
 import org.vertx.java.core.AsyncResult;
@@ -87,8 +87,8 @@ public class ClientVerticle extends Verticle {
   private void testNetClient(final VoidHandler completeHandler) {
     container.logger().info("testNetClient > Start.");
     int port = container.config().getInteger("net_port");
-    final TNetClientTransport transport = new TNetClientTransport(
-        new TNetClientTransport.Args(vertx, port));
+    final TFramedNetClientTransport transport = new TFramedNetClientTransport(
+        new TFramedNetClientTransport.Args(vertx, port));
     transport.connectHandler(new Handler<Void>() {
       @Override
       public void handle(Void event) {
