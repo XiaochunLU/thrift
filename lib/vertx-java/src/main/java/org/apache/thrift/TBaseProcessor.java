@@ -6,6 +6,7 @@ import java.util.Map;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 
@@ -38,7 +39,27 @@ public abstract class TBaseProcessor<I> implements TProcessor {
       out.getTransport().flush();
       return true;
     }
-    fn.process(msg.seqid, in, out, iface);
+
+    TApplicationException ax = null;
+    try {
+      fn.process(msg.seqid, in, out, iface);
+    } catch (TException tx) {
+      if (tx instanceof TProtocolException) {
+        ax = new TApplicationException(TApplicationException.PROTOCOL_ERROR, tx.getMessage());
+      } else {
+        throw tx;  // throw out such as TTransportException since connection may be lost
+      }
+    } catch (Exception x) {
+      ax = new TApplicationException(TApplicationException.INTERNAL_ERROR,
+          "Uncaught exception: " + x.getClass().getName() + ", " + x.getMessage());
+    }
+    if (ax != null) {
+      out.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
+      ax.write(out);
+      out.writeMessageEnd();
+      out.getTransport().flush();
+      return true;
+    }
     return true;
   }
   
